@@ -226,6 +226,7 @@ extension StateExt<T> on StateMixin<T> {
     Widget Function(String? error)? onError,
     Widget? onLoading,
     Widget? onEmpty,
+    Widget? onInitial,
     WidgetBuilder? onCustom,
   }) {
     return Observer(builder: (_) {
@@ -241,7 +242,11 @@ extension StateExt<T> on StateMixin<T> {
             : SizedBox.shrink(); // Also can be widget(null); but is risky
       } else if (status.isSuccess) {
         return widget(value);
-      } else if (status.isCustom) {
+      }  else if (status.isInitial) {
+         return onInitial != null
+            ? onInitial
+            : SizedBox.shrink();
+      }else if (status.isCustom) {
         return onCustom?.call(_) ??
             SizedBox.shrink(); // Also can be widget(null); but is risky
       }
@@ -258,10 +263,11 @@ abstract class GetStatus<T> {
   factory GetStatus.error(String message) => ErrorStatus(message);
   factory GetStatus.empty() => EmptyStatus();
   factory GetStatus.success(T data) => SuccessStatus(data);
+  factory GetStatus.initial() => InitialStatus();
 }
 
 class LoadingStatus<T> extends GetStatus<T> {}
-
+class InitialStatus<T> extends GetStatus<T> {}
 class SuccessStatus<T> extends GetStatus<T> {
   final T data;
 
@@ -280,7 +286,8 @@ extension StatusDataExt<T> on GetStatus<T> {
   bool get isSuccess => this is SuccessStatus;
   bool get isError => this is ErrorStatus;
   bool get isEmpty => this is EmptyStatus;
-  bool get isCustom => !isLoading && !isSuccess && !isError && !isEmpty;
+  bool get isInitial => this is InitialStatus;
+  bool get isCustom => !isLoading && !isSuccess && !isError && !isEmpty &&!isInitial;
   String get errorMessage {
     final isError = this is ErrorStatus;
     if (isError) {
